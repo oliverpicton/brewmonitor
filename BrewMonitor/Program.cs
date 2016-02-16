@@ -14,8 +14,7 @@ namespace BrewMonitor
     class Program
     {
         static void Main(string[] args)
-        {
-            
+        {            
             var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice );
         
             var videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString );
