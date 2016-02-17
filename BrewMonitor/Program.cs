@@ -52,7 +52,7 @@ namespace BrewMonitor
                     };
 
                     Console.WriteLine("{0} > Sending temperature: {1}", DateTime.Now, temp);
-                    eventHubClient.SendAsync(new EventData(Encoding.UTF8.GetBytes(serializedString)));
+                    eventHubClient.Send(new EventData(Encoding.UTF8.GetBytes(serializedString)));
                 }
                 catch (Exception exception)
                 {
