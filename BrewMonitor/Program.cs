@@ -1,45 +1,70 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Net.Mime;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using AForge.Video;
 using AForge.Video.DirectShow;
 using Tesseract;
-
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
+using AForge.Imaging.Filters;
+using AForge.Imaging;
+using Microsoft.ServiceBus.Messaging;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace BrewMonitor
 {
     class Program
     {
         static void Main(string[] args)
-        {            
-            var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice );
-        
-                var videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString );
-
-            videoSource.NewFrame += CaptureFrame;
-            
-            videoSource.Start();
-
-            Thread.Sleep(10000);
-
-            videoSource.Stop();
-
-            using (var engine = new TesseractEngine(@"tessdata", "eng", EngineMode.Default))
+        {
+            while (true)
             {
-                using (var img = Pix.LoadFromFile(@"stc1000test.jpg"))
-                {                   
-                    using (var page = engine.Process(img))
+                var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+
+                var videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString);
+
+                videoSource.NewFrame += CaptureFrame;
+
+                videoSource.Start();
+
+                Thread.Sleep(500);
+
+                videoSource.Stop();
+
+                var engine = new TesseractEngine(@"tessdata", "letsgodigital", EngineMode.Default);
+
+                var image = new ElitechStc1000Image("stc-1000-real.jpg", engine);
+
+                var temp = image.GetTemperature();
+
+                Console.WriteLine(temp);
+
+                var eventHubClient = EventHubClient.CreateFromConnectionString("Endpoint=sb://waggonroadbrewery-ns.servicebus.windows.net/;SharedAccessKeyName=SendRule;SharedAccessKey=wRuOQTcJU2yzVwWiydQrHvlnD6nlD/7sfTzwgKoRQtM=", "stc1000statsin");
+
+                try
+                {
+                    var sensorEvent = new SensorEvent
                     {
-                        var text = page.GetText();
-                        Console.WriteLine(text);
-                    }                    
+                        Temperature = temp
+                    };
+
+                    var serializedString = JsonConvert.SerializeObject(sensorEvent);
+                    var data = new EventData(Encoding.Unicode.GetBytes(serializedString))
+                    {
+                        PartitionKey = "temperature-sensor"
+                    };
+
+                    Console.WriteLine("{0} > Sending temperature: {1}", DateTime.Now, temp);
+                    eventHubClient.SendAsync(new EventData(Encoding.UTF8.GetBytes(serializedString)));
                 }
+                catch (Exception exception)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("{0} > Exception: {1}", DateTime.Now, exception.Message);
+                    Console.ResetColor();
+                }
+
+                Thread.Sleep(2000);
             }
         }
 
