@@ -5,30 +5,27 @@ using AForge.Video;
 using AForge.Video.DirectShow;
 using Tesseract;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
-using AForge.Imaging.Filters;
-using AForge.Imaging;
 using Microsoft.ServiceBus.Messaging;
 using System.Text;
 using Newtonsoft.Json;
+using System.Configuration;
 
 namespace BrewMonitor
 {
     class Program
     {
+        private static VideoCaptureDevice videoSource;
+
         static void Main(string[] args)
         {
+
             while (true)
             {
-                var videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
-
-                var videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString);
-
+                videoSource = new VideoCaptureDevice(new FilterInfoCollection(FilterCategory.VideoInputDevice)[0].MonikerString);
                 videoSource.NewFrame += CaptureFrame;
 
                 videoSource.Start();
-
-                Thread.Sleep(500);
-
+                Thread.Sleep(1000);
                 videoSource.Stop();
 
                 var engine = new TesseractEngine(@"tessdata", "letsgodigital", EngineMode.Default);
@@ -39,7 +36,7 @@ namespace BrewMonitor
 
                 Console.WriteLine(temp);
 
-                var eventHubClient = EventHubClient.CreateFromConnectionString("Endpoint=sb://waggonroadbrewery-ns.servicebus.windows.net/;SharedAccessKeyName=SendRule;SharedAccessKey=wRuOQTcJU2yzVwWiydQrHvlnD6nlD/7sfTzwgKoRQtM=", "stc1000statsin");
+                var eventHubClient = EventHubClient.CreateFromConnectionString(ConfigurationManager.AppSettings["EventHubSendConnection"], "stc1000statsin");
 
                 try
                 {

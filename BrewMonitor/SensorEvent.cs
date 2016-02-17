@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace BrewMonitor
+﻿namespace BrewMonitor
 {
     public class SensorEvent
     {

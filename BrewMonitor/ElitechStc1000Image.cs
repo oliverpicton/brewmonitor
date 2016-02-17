@@ -1,6 +1,5 @@
 ﻿using AForge.Imaging;
 using AForge.Imaging.Filters;
-using Aspose.OCR;
 using System.Threading;
 using Tesseract;
 
@@ -84,24 +83,9 @@ namespace BrewMonitor
             }
             catch (System.Exception)
             {
-
+                //TODO: Add in exception logging
                 return string.Empty;
-            }
-            
-            //return "Rubbish";          
-            //OcrEngine ocrEngine = new OcrEngine();
-
-            ////Set the Image property by loading the image from file path location or an instance of MemoryStream
-            //ocrEngine.Image = ImageStream.FromFile(processedFileName);
-
-            ////Process the image
-            //if (ocrEngine.Process())
-            //{
-            //    //Display the recognized text
-            //    return ocrEngine.Text.ToString();
-            //}
-
-            //return string.Empty;
+            }            
         }
     }
 }
