@@ -1,6 +1,6 @@
-﻿using AForge.Imaging;
+﻿using System.Collections.Generic;
+using AForge.Imaging;
 using AForge.Imaging.Filters;
-using System.Threading;
 using Tesseract;
 
 namespace BrewMonitor
@@ -23,10 +23,14 @@ namespace BrewMonitor
             this.engine = engine;
         }
 
+        public IEnumerable<string> Colours  { get; set; }
+
         public double GetTemperature()
         {
+            var temp = 0.0;
+
             var image = Image.FromFile(filename);
-                        
+
             var grayscale = new Grayscale(0.2125, 0.7154, 0.0721);
             image = grayscale.Apply(image);
 
@@ -36,7 +40,7 @@ namespace BrewMonitor
             var stats = new ImageStatistics(image);
             var levelsLinear = new LevelsLinear
             {
-                InGray = stats.Gray.GetRange(0.90)
+                InGray = stats.Gray.GetRange(2.90)
             };
 
             image = levelsLinear.Apply(image);
@@ -47,24 +51,17 @@ namespace BrewMonitor
             var erosion = new Erosion();
             image = erosion.Apply(image);
 
-            var blur = new GaussianBlur(4, 15);
+            var blur = new GaussianBlur(2, 3);
             image = blur.Apply(image);
 
-            var threshold = new Threshold(140);
+            var threshold = new Threshold(79);
             image = threshold.Apply(image);
 
             image.Save(processedFileName, System.Drawing.Imaging.ImageFormat.Jpeg);
             image.Dispose();
-            Thread.Sleep(5000);
             var text = Recognise();
 
-            var textArr = text.Split(',');
-            var temp = 0d;
-
-            if (textArr.Length == 2 && double.TryParse(textArr[1], out temp))
-            {
-                return temp;
-            }
+            double.TryParse(text.Replace(',', '.'), out temp);
 
             return temp;
         }

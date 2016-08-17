@@ -3,11 +3,9 @@ using System.Drawing;
 using System.Threading;
 using AForge.Video;
 using AForge.Video.DirectShow;
+using BrewMonitor.Sinks;
 using Tesseract;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
-using Microsoft.ServiceBus.Messaging;
-using System.Text;
-using Newtonsoft.Json;
 using System.Configuration;
 
 namespace BrewMonitor
@@ -30,13 +28,11 @@ namespace BrewMonitor
 
                 var engine = new TesseractEngine(@"tessdata", "letsgodigital", EngineMode.Default);
 
-                var image = new ElitechStc1000Image("stc-1000-real.jpg", engine);
+                var image = new ElitechStc1000Image("test3.jpg", engine);
 
                 var temp = image.GetTemperature();
 
                 Console.WriteLine(temp);
-
-                var eventHubClient = EventHubClient.CreateFromConnectionString(ConfigurationManager.AppSettings["EventHubSendConnection"], "stc1000statsin");
 
                 try
                 {
@@ -45,14 +41,12 @@ namespace BrewMonitor
                         Temperature = temp
                     };
 
-                    var serializedString = JsonConvert.SerializeObject(sensorEvent);
-                    var data = new EventData(Encoding.Unicode.GetBytes(serializedString))
-                    {
-                        PartitionKey = "temperature-sensor"
-                    };
-
                     Console.WriteLine("{0} > Sending temperature: {1}", DateTime.Now, temp);
-                    eventHubClient.Send(new EventData(Encoding.UTF8.GetBytes(serializedString)));
+
+                    var sink = new AzuresStreamAnalytics()
+                        .WithConnectionString(ConfigurationManager.AppSettings["EventHubSendConnection"]);
+
+                    sink.Send(sensorEvent);
                 }
                 catch (Exception exception)
                 {
